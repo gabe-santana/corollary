@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Citation and provenance checks now recognize Portuguese and Spanish scale words (`mil`,
+  `milhão`/`milhões`, `bilhão`/`bilhões`, `trilhão`/`trilhões`, `millón`/`millones`,
+  `billón`/`billones`), singular and plural, with and without accents. Decimal commas and Spanish
+  "mil millones" are out of scope.
+
 ### Changed
 
 - The public `Action` type is now exported and documented for annotating parsed responses.

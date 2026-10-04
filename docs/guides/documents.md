@@ -38,7 +38,9 @@ kb.cite(
    not match "$4 million". A value stored in a smaller unit matches too: `4300`, in millions, matches
    "$4.3 billion". A number without a unit may be in any magnitude or a percentage, because tables often
    state their unit in a header ("in millions", "(%)"). A numeric string value (`"4.3"`) is matched as a
-   number.
+   number. Portuguese and Spanish scale words are recognized too, singular and plural, with and without
+   accents: `mil`, `milhão`/`milhões`, `bilhão`/`bilhões`, `trilhão`/`trilhões`, `millón`/`millones` and
+   `billón`/`billones` (note that Spanish `billón` is 10^12, not 10^9).
 
 The second check is what stops a model from citing a real sentence while extracting a number that isn't
 in it.

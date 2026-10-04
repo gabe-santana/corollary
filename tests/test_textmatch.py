@@ -63,6 +63,24 @@ def test_numbers_in() -> None:
         (-2.5, "fell by −2.5", True),
         (False, "a falsehood", False),
         ("Austin", "Austinville", False),
+        # Portuguese and Spanish scale words (#13), singular/plural, with/without accents.
+        (4.3e9, "receita de 4.3 bilhões", True),
+        (4.3e9, "4.3 milhões", False),
+        (2.5e12, "2.5 billones", True),
+        (1500.0, "receita de 1.5 mil", True),
+        # These would wrongly pass if "mil"/"milhao"/"millon" fell through to the permissive
+        # unit-less match instead of being recognized and scale-restricted.
+        (1.5e9, "1.5 mil", False),
+        (4.3e9, "4.3 milhao", False),
+        (4.3e9, "4.3 millon", False),
+        (4.3e6, "4.3 milhao", True),  # unaccented
+        (4.3e6, "4.3 milhão", True),  # accented, singular
+        (4.3e9, "4.3 bilhao", True),  # unaccented
+        (4.3e12, "4.3 trilhoes", True),  # unaccented, plural
+        (4.3e12, "4.3 trilhões", True),  # accented, plural
+        (4.3e6, "4.3 millon", True),  # unaccented Spanish
+        (4.3e6, "4.3 millón", True),  # accented Spanish
+        (2.5e12, "2.5 billón", True),  # accented Spanish, singular
     ],
 )
 def test_value_in_text(value: object, text: str, expected: bool) -> None:

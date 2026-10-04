@@ -1198,9 +1198,13 @@ class BeliefBase:
     ) -> BeliefBase:
         if data.get("format") != _FORMAT:
             raise ValueError("not a Corollary belief base snapshot")
-        version = int(data.get("version", 0))
+        version = data.get("version", 0)
+        if isinstance(version, bool) or not isinstance(version, int):
+            raise ValueError(f"snapshot version must be an integer, got {version!r}")
+        if version < 0:
+            raise ValueError(f"snapshot version {version} is invalid (must be >= 0)")
         if version > _FORMAT_VERSION:
-            raise ValueError(f"snapshot version {data['version']} is newer than this library supports")
+            raise ValueError(f"snapshot version {version} is newer than this library supports")
         with _corrupt_snapshot_errors():
             saved_ledger = TrustLedger.from_dict(data["ledger"]) if ledger is None and data.get("ledger") else None
         # Built outside the guard: a mistake in the caller's own arguments is not a corrupt snapshot.

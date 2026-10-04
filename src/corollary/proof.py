@@ -97,7 +97,7 @@ class Proof:
     # -- construction ---------------------------------------------------------------------
 
     @classmethod
-    def build(cls, kb: BeliefBase, *keys_or_refs: str) -> Proof:
+    def build(cls, kb: BeliefBase, *keys_or_refs: str | Belief) -> Proof:
         """Snapshot the support of ``keys_or_refs`` in ``kb`` (see :meth:`BeliefBase.proof`)."""
         roots = tuple(kb._resolve_for_proof(item) for item in keys_or_refs)
         ordered: list[ProofStep] = []

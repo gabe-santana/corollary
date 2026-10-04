@@ -8,6 +8,10 @@ is given. Signatures show keyword-only arguments after `*`. Every class and func
 
 ### `BeliefBase(*, trust=None, clock=None, rules=(), constraints=(), ledger=None)`
 
+Every `key_or_ref` parameter below, `proof()`'s `*keys_or_refs`, and `derive()`'s `*inputs` and
+`justify()`'s `antecedents=` also accept a `Belief` directly (meaning its exact revision), so a value
+returned by `assert_()`, `derive()` or `justify()` can be passed straight back in.
+
 **Premises**
 
 | Method | Description |

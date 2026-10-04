@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `retract`, `restore`, `status`, `confidence`, `valid_until`, `support`, `justifications`,
+  `dependents`, `why_out`, `explain` and `proof`, plus `derive()`'s `*inputs` and `justify()`'s
+  `antecedents=`, now accept a `Belief` directly (meaning its exact revision) wherever a key or ref
+  was accepted, so a value returned by `assert_()`, `derive()` or `justify()` can be passed straight
+  back in instead of stringified to `.ref` first. Anything else raises `TypeError`.
+
 ### Changed
 
 - The public `Action` type is now exported and documented for annotating parsed responses.

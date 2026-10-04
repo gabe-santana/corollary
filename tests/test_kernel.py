@@ -587,3 +587,75 @@ def test_a_re_read_is_logged_as_a_renewal(kb: BeliefBase) -> None:
     kb.assert_("x", 1, source="tool:a")
     kb.assert_("x", 1, source="tool:a")
     assert [e.action for e in kb.history][-1] == "renew"
+
+
+# -- accepting Belief objects wherever a key or ref is accepted (#52) ----------------------------
+
+
+class TestAcceptsBeliefObjects:
+    """``assert_()``, ``derive()`` and ``justify()`` return a Belief; every reader and the retract/
+    restore pair must take it back, meaning its exact revision, so users don't have to stringify a
+    value they already hold."""
+
+    def test_retract_and_restore(self, kb: BeliefBase) -> None:
+        q2 = kb.assert_("revenue:Q2", 4.3e9, source="tool:filings")
+        (retracted,) = kb.retract(q2)
+        assert retracted.ref == q2.ref
+        assert kb.status(q2.ref) is Status.OUT
+        restored = kb.restore(q2)
+        assert restored.ref == q2.ref
+        assert kb.status(q2.ref) is Status.IN
+
+    def test_status_confidence_valid_until(self, kb: BeliefBase) -> None:
+        q2 = kb.assert_("revenue:Q2", 4.3e9, source="tool:filings")
+        assert kb.status(q2) is Status.IN
+        assert kb.confidence(q2) == kb.confidence(q2.ref)
+        assert kb.valid_until(q2) == kb.valid_until(q2.ref)
+
+    def test_support_justifications_dependents(self, revenue_kb: BeliefBase) -> None:
+        q2 = revenue_kb["revenue:Q2"]
+        assert revenue_kb.support(q2) is revenue_kb.support(q2.ref)
+        assert revenue_kb.justifications(q2) == revenue_kb.justifications(q2.ref)
+        assert [d.ref for d in revenue_kb.dependents(q2)] == [d.ref for d in revenue_kb.dependents(q2.ref)]
+
+    def test_why_out_and_explain(self, kb: BeliefBase) -> None:
+        q2 = kb.assert_("revenue:Q2", 4.3e9, source="tool:filings")
+        kb.retract(q2, reason="restated")
+        assert kb.why_out(q2) == kb.why_out(q2.ref)
+        assert kb.explain(q2) == kb.explain(q2.ref)
+
+    def test_proof_accepts_belief_roots(self, revenue_kb: BeliefBase) -> None:
+        q2 = revenue_kb["revenue:Q2"]
+        q3 = revenue_kb["revenue:Q3"]
+        proof = revenue_kb.proof(q2, q3)
+        assert {s.ref for s in proof.steps} == {q2.ref, q3.ref}
+
+    def test_derive_accepts_belief_inputs(self, kb: BeliefBase) -> None:
+        q2 = kb.assert_("revenue:Q2", 4.3e9, source="tool:filings")
+        q3 = kb.assert_("revenue:Q3", 4.5e9, source="tool:filings")
+        g = kb.derive("growth", growth, q2, q3)
+        assert g.value == pytest.approx(4.651162790697675)
+
+    def test_justify_accepts_belief_antecedents(self, kb: BeliefBase) -> None:
+        q2 = kb.assert_("revenue:Q2", 4.3e9, source="tool:filings")
+        q3 = kb.assert_("revenue:Q3", 4.5e9, source="tool:filings")
+        j = kb.justify("claim", "grew", antecedents=[q2, q3], source="model:claude")
+        assert j.value == "grew"
+
+    @pytest.mark.parametrize(
+        "method_name",
+        ["retract", "restore", "status", "confidence", "valid_until", "support", "justifications", "proof"],
+    )
+    def test_neither_string_nor_belief_raises_type_error(self, kb: BeliefBase, method_name: str) -> None:
+        with pytest.raises(TypeError, match="expected a key, ref, or Belief"):
+            getattr(kb, method_name)(123)
+
+    def test_dependents_also_raises_type_error(self, kb: BeliefBase) -> None:
+        with pytest.raises(TypeError, match="expected a key, ref, or Belief"):
+            kb.dependents(123)
+
+    def test_why_out_and_explain_raise_type_error(self, kb: BeliefBase) -> None:
+        with pytest.raises(TypeError, match="expected a key, ref, or Belief"):
+            kb.why_out(123)
+        with pytest.raises(TypeError, match="expected a key, ref, or Belief"):
+            kb.explain(123)

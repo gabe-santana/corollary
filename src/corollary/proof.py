@@ -284,7 +284,9 @@ class Proof:
     def to_json(self, **kwargs: Any) -> str:
         """The proof as JSON. Keyword arguments go to :func:`json.dumps`. A value JSON can't represent
         (a ``Decimal``, a ``date``) raises ``TypeError`` rather than being silently turned into a
-        string; pass ``default=str`` to accept that loss."""
+        string; pass ``default=str`` to accept that loss. A dict with a key JSON can't use (anything
+        other than ``str``, ``int``, ``float``, ``bool`` or ``None``) raises a different ``TypeError``,
+        since ``default=`` never reaches dict keys and so cannot fix that case."""
         kwargs.setdefault("indent", 2)
         try:
             return json.dumps(self.to_dict(), **kwargs)
@@ -295,6 +297,12 @@ class Proof:
                 try:
                     json.dumps(step.belief.value, **kwargs)
                 except TypeError:
+                    bad_key = _find_bad_dict_key(step.belief.value)
+                    if bad_key is not _NO_BAD_KEY:
+                        raise TypeError(
+                            f"belief {step.ref} has a dict key of type {type(bad_key).__name__}, "
+                            "which JSON can't represent; use string keys"
+                        ) from exc
                     value_type = type(step.belief.value).__name__
                     raise TypeError(
                         f"belief {step.ref} has a value of type {value_type}, which JSON can't represent; "
@@ -317,6 +325,33 @@ class Proof:
     @classmethod
     def from_json(cls, text: str) -> Proof:
         return cls.from_dict(json.loads(text))
+
+
+_NO_BAD_KEY = object()
+_JSON_KEY_TYPES = (str, int, float, bool, type(None))
+
+
+def _find_bad_dict_key(value: Any) -> Any:
+    """Walk ``value`` (through dicts, lists and tuples) for the first dict key JSON cannot use.
+
+    ``json.dumps`` silently stringifies ``int``/``float``/``bool``/``None`` keys, so only a key of
+    some other type -- a ``tuple``, say -- is a problem. Returns ``_NO_BAD_KEY`` if none is found,
+    since a legitimate key may itself be ``None``.
+    """
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if not isinstance(key, _JSON_KEY_TYPES):
+                return key
+            found = _find_bad_dict_key(nested)
+            if found is not _NO_BAD_KEY:
+                return found
+        return _NO_BAD_KEY
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            found = _find_bad_dict_key(item)
+            if found is not _NO_BAD_KEY:
+                return found
+    return _NO_BAD_KEY
 
 
 def _mermaid_text(text: str) -> str:

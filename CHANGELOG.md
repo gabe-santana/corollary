@@ -11,6 +11,9 @@ All notable changes to this project are documented here. The format follows
 - The public `Action` type is now exported and documented for annotating parsed responses.
 - Documented verification, formula and contract submodules now declare their supported public exports.
 - `Proof.to_json()` serialization errors now identify the first belief whose value JSON cannot represent.
+- `Proof.to_json()` now gives a distinct error for a dict key JSON can't represent (e.g. a `tuple`),
+  instead of the misleading `pass default=str` advice -- `json.dumps` never applies `default` to keys,
+  so that advice couldn't actually fix this case.
 - `Report` and `StepRecord` now have a short `repr` that summarizes (task, completion, step/rejection
   counts, error) instead of dumping every step's full prompt and raw model response. `str(report)` is
   unchanged.

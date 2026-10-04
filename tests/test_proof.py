@@ -137,3 +137,33 @@ def test_to_json_refuses_values_json_cannot_represent(kb: BeliefBase) -> None:
         proof.to_json(default=reject)
     assert custom_error.value.__cause__ is None
     assert not str(custom_error.value).startswith("belief ")
+
+
+def test_to_json_names_a_bad_dict_key_instead_of_suggesting_default(kb: BeliefBase) -> None:
+    """default=str never reaches dict keys, so that advice is wrong for this case."""
+    kb.assert_("t", {(1, 2): "x"}, source="tool:x")
+    proof = kb.proof("t")
+    with pytest.raises(TypeError, match="belief t@1 has a dict key of type tuple") as error:
+        proof.to_json()
+    assert "default=str" not in str(error.value)
+    assert isinstance(error.value.__cause__, TypeError)
+    # default=str doesn't fix it either -- json.dumps never applies default to keys.
+    with pytest.raises(TypeError, match="keys must be"):
+        proof.to_json(default=str)
+
+
+def test_to_json_finds_a_bad_dict_key_nested_inside_a_list(kb: BeliefBase) -> None:
+    kb.assert_("t", {"items": [{"ok": 1}, {(1, 2): "x"}]}, source="tool:x")
+    proof = kb.proof("t")
+    with pytest.raises(TypeError, match="belief t@1 has a dict key of type tuple"):
+        proof.to_json()
+
+
+def test_to_json_value_type_message_is_unchanged_for_non_key_cases(kb: BeliefBase) -> None:
+    from decimal import Decimal
+
+    kb.assert_("price", Decimal("10.5"), source="tool:x")
+    proof = kb.proof("price")
+    with pytest.raises(TypeError, match=r"belief price@1 has a value of type Decimal") as error:
+        proof.to_json()
+    assert "dict key" not in str(error.value)

@@ -108,8 +108,7 @@ report.verify()  # deterministic checks over the proof
 Now an upstream figure is corrected:
 
 ```python
-kb.retract("revenue:Q2", reason="restated in 10-K/A")
-kb.assert_("revenue:Q2", 4.1e9, source="tool:get_revenue")
+kb.correct("revenue:Q2", 4.1e9, reason="restated in 10-K/A")
 
 for change in agent.repair():
     print(change)

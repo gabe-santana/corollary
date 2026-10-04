@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `BeliefBase.correct(key_or_belief, value, *, source=None, reason="", fault="none", **assert_kwargs)`
+  retracts the current revision and asserts the new value in one call, instead of two.  `source`
+  defaults to the corrected revision's own source. Built on `assert_(supersede=True)`'s own
+  rollback: if the assertion fails, nothing changes.
+
 ### Changed
 
 - The public `Action` type is now exported and documented for annotating parsed responses.

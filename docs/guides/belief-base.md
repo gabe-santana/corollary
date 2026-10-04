@@ -134,11 +134,30 @@ kb.retract("price:ACME", reason="scraper returned stale data", fault="source")  
 With `fault="source"`, every source accountable for the belief is recorded as wrong, and its
 reliability (and the confidence of everything else it reported) drops. See [Confidence](confidence.md).
 
+## Correcting a fact
+
+Retracting the old revision and asserting the new one is the most common thing people do with
+Corollary, so `correct()` does both in one call:
+
+```python
+kb.correct("revenue:Q2", 4.1e9, reason="restated in 10-K/A")
+```
+
+`source` defaults to the source of the revision being corrected, so the call above needs no
+`source=` of its own. Pass one explicitly when the correction comes from somewhere else:
+
+```python
+kb.correct("price:ACME", 41.2, source="tool:refresh", reason="stale quote", fault="source")
+```
+
+`reason` and `fault` mean the same as `retract()`'s. If the new value fails to assert (an invalid
+value, source or confidence), nothing changes — `correct()` is built on `assert_(supersede=True)`'s
+own rollback.
+
 ## Propagating changes
 
 ```python
-kb.retract("revenue:Q2", reason="restated")
-kb.assert_("revenue:Q2", 4.1e9, source="tool:sec_filings")
+kb.correct("revenue:Q2", 4.1e9, reason="restated")
 result = kb.propagate()
 ```
 

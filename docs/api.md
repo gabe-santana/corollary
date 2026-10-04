@@ -33,6 +33,7 @@ is given. Signatures show keyword-only arguments after `*`. Every class and func
 |---|---|
 | `retract(key_or_ref, *, reason="", fault="none") -> list[Belief]` | Retract every `IN` revision of a key, or one ref. `fault="source"` records the accountable sources as wrong. |
 | `restore(key_or_ref) -> Belief` | Undo a retraction. |
+| `correct(key_or_belief, value, *, source=None, reason="", fault="none", **assert_kwargs) -> Belief` | Retract the current revision and assert the new value in one call. `source` defaults to the corrected revision's own source. |
 | `propagate(*, rederive=None, include_kept=False, max_rounds=100) -> Propagation` | Re-derive what lost support; return the diff. |
 | `changes(*, include_kept=False) -> list[Change]` | Net status changes since the log was last read (clears it). |
 | `refresh() -> list[Belief]` | Apply expiries; return beliefs that just expired. |

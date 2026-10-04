@@ -119,6 +119,17 @@ class Report:
     def __str__(self) -> str:
         return self.answer if self.answer is not None else "(no answer)"
 
+    def __repr__(self) -> str:
+        def short(value: str | None) -> str:
+            if value is not None and len(value) > 60:
+                value = value[:57] + "..."
+            return repr(value)
+
+        return (
+            f"Report(task={short(self.task)}, completed={self.completed!r}, answer={short(self.answer)}, "
+            f"steps={len(self.steps)}, rejections={len(self.rejections)}, error={self.error!r})"
+        )
+
 
 @dataclass(frozen=True)
 class NarrowResult:

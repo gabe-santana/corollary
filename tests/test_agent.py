@@ -84,6 +84,21 @@ def test_run_produces_answer_with_proof() -> None:
     assert agent.beliefs is agent.kb
 
 
+def test_report_repr_summarizes_run_without_prompts() -> None:
+    agent, _ = make_agent(FETCH, ANALYZE, dependencies="declared")
+    report = agent.run("Compare Q2 and Q3 revenue.")
+
+    rendered = repr(report)
+    assert "task='Compare Q2 and Q3 revenue.'" in rendered
+    assert "completed=True" in rendered
+    assert "steps=2" in rendered
+    assert report.steps[0].prompt not in rendered
+    assert str(report) == report.answer
+
+    report.task = "x" * 61
+    assert f"task={('x' * 57 + '...')!r}" in repr(report)
+
+
 def test_tool_results_are_premises_recorded_by_the_runtime() -> None:
     agent, _ = make_agent(FETCH, ANALYZE)
     agent.run("t")

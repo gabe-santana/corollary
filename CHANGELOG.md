@@ -9,6 +9,7 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - Documented verification, formula and contract submodules now declare their supported public exports.
+- `Report` now has a concise representation that summarizes the run without dumping model prompts and responses.
 
 ## [0.1.0a4] - 2026-10-03
 

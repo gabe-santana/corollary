@@ -9,6 +9,11 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - Documented verification, formula and contract submodules now declare their supported public exports.
+- `Proof.to_json()` now names the belief and type when a value JSON can't represent causes it to raise
+  `TypeError` (e.g. `belief price@1 has a value of type Decimal, which JSON can't represent; pass
+  default=str to store it as text`), instead of json's generic message with no indication of which of a
+  proof's possibly hundreds of steps is at fault. A caller-supplied `default=` still gets its own error
+  untouched.
 
 ## [0.1.0a4] - 2026-10-03
 

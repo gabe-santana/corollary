@@ -283,10 +283,23 @@ class Proof:
 
     def to_json(self, **kwargs: Any) -> str:
         """The proof as JSON. Keyword arguments go to :func:`json.dumps`. A value JSON can't represent
-        (a ``Decimal``, a ``date``) raises ``TypeError`` rather than being silently turned into a
-        string; pass ``default=str`` to accept that loss."""
+        (a ``Decimal``, a ``date``) raises ``TypeError`` naming the offending belief rather than being
+        silently turned into a string; pass ``default=str`` to accept that loss."""
         kwargs.setdefault("indent", 2)
-        return json.dumps(self.to_dict(), **kwargs)
+        try:
+            return json.dumps(self.to_dict(), **kwargs)
+        except TypeError as exc:
+            if "default" in kwargs:
+                raise
+            for step in self.steps:
+                try:
+                    json.dumps(step.belief.value)
+                except TypeError:
+                    raise TypeError(
+                        f"belief {step.ref} has a value of type {type(step.belief.value).__name__}, "
+                        "which JSON can't represent; pass default=str to store it as text"
+                    ) from exc
+            raise
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Proof:

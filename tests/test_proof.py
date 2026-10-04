@@ -123,6 +123,43 @@ def test_to_json_refuses_values_json_cannot_represent(kb: BeliefBase) -> None:
 
     kb.assert_("price", Decimal("10.5"), source="tool:x")
     proof = kb.proof("price")
-    with pytest.raises(TypeError, match="Decimal"):
+    with pytest.raises(TypeError, match=r"belief price@1 has a value of type Decimal"):
         proof.to_json()
     assert '"10.5"' in proof.to_json(default=str)  # the lossy conversion is still available on request
+
+
+def test_to_json_error_names_the_offending_belief_among_several(kb: BeliefBase) -> None:
+    """A proof can have hundreds of steps; the error must name the one that failed."""
+    from decimal import Decimal
+
+    kb.assert_("a", 1, source="tool:x")
+    kb.assert_("price", Decimal("1.5"), source="tool:x")
+    kb.derive("total", lambda a, p: 1, "a", "price")
+    proof = kb.proof("total")
+    with pytest.raises(TypeError, match=r"belief price@1 has a value of type Decimal"):
+        proof.to_json()
+
+
+def test_to_json_error_keeps_the_original_as_its_cause(kb: BeliefBase) -> None:
+    from decimal import Decimal
+
+    kb.assert_("price", Decimal("10.5"), source="tool:x")
+    proof = kb.proof("price")
+    with pytest.raises(TypeError) as excinfo:
+        proof.to_json()
+    assert excinfo.value.__cause__ is not None
+    assert "not JSON serializable" in str(excinfo.value.__cause__)
+
+
+def test_to_json_with_a_custom_default_leaves_its_error_untouched(kb: BeliefBase) -> None:
+    """If the caller passed their own default=, that error is not replaced."""
+    from decimal import Decimal
+
+    kb.assert_("price", Decimal("10.5"), source="tool:x")
+    proof = kb.proof("price")
+
+    def strict_default(value: object) -> str:
+        raise TypeError(f"no serializer registered for {value!r}")
+
+    with pytest.raises(TypeError, match="no serializer registered"):
+        proof.to_json(default=strict_default)

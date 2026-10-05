@@ -71,6 +71,11 @@ LM Studio, ...). It requests JSON mode by default. Pass `json_mode=False` for se
 it. Extra keyword arguments (`temperature=0`, ...) are forwarded; an explicit `response_format` replaces
 JSON mode. Refusals (`message.refusal`, or `finish_reason == "content_filter"`) raise `ModelRefusalError`.
 
+[`examples/agent_ollama.py`](https://github.com/gabe-santana/corollary/blob/main/examples/agent_ollama.py)
+runs the full agent loop, including a restatement and `repair()`, against a local Ollama model. Pass the
+model name as the first argument or set `OLLAMA_MODEL`; set `OLLAMA_HOST` if the server isn't on
+`localhost:11434`.
+
 ## Any function
 
 ```python

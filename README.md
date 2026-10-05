@@ -241,6 +241,7 @@ Then follow [Getting started](docs/getting-started.md), or run an example. Neith
 python examples/self_repairing_report.py   # 20 conclusions repair themselves, zero model calls
 python examples/agent_offline.py           # a full agent run with a scripted model
 python examples/agent_claude.py            # the same with Claude (needs ANTHROPIC_API_KEY)
+python examples/agent_ollama.py            # the same with a local Ollama model
 ```
 
 ## Documentation

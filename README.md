@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="https://raw.githubusercontent.com/gabe-santana/corollary/main/docs/assets/corollary-logo.png" alt="Corollary logo" width="140">
+
 # Corollary
 
 **An agent runtime where the unit of state is a belief, not a message.**
@@ -18,7 +20,7 @@ Correct one fact, and everything that followed from it updates itself.
 
 <br>
 
-<img src="docs/assets/corollary-demo.gif" alt="Animated diagram: beliefs linked by what they follow from. Q2 revenue is corrected, every conclusion that depended on it goes OUT, and only those are re-derived, while an independent risk belief stays untouched." width="860">
+<img src="https://raw.githubusercontent.com/gabe-santana/corollary/main/docs/assets/corollary-demo.gif" alt="Animated diagram: beliefs linked by what they follow from. Q2 revenue is corrected, every conclusion that depended on it goes OUT, and only those are re-derived, while an independent risk belief stays untouched." width="860">
 
 </div>
 

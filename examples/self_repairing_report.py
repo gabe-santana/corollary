@@ -156,8 +156,7 @@ def main() -> None:
 
     print("Q2 revenue is restated from $4.3B to $4.1B in a 10-K/A.\n")
     evaluations.clear()
-    kb.retract("revenue:Q2", reason="restated in 10-K/A")
-    kb.assert_("revenue:Q2", 4.1e9, source="tool:sec_filings", claim="Q2 revenue (restated)")
+    kb.correct("revenue:Q2", 4.1e9, reason="restated in 10-K/A", claim="Q2 revenue (restated)")
     result = kb.propagate(include_kept=True)
 
     for change in result:

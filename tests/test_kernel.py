@@ -261,6 +261,95 @@ def test_retracting_a_ref_only_affects_that_revision(kb: BeliefBase) -> None:
     assert kb.value("x") == 2
 
 
+# -- correct() ------------------------------------------------------------------------------
+
+
+class TestCorrect:
+    """``correct()``: retract the currently believed revision and assert the new value in one
+    call, built on assert_()'s own supersede=True rollback."""
+
+    def test_old_revision_out_with_reason_new_revision_in(self, kb: BeliefBase) -> None:
+        q2 = kb.assert_("revenue:Q2", 4.3e9, source="tool:filings")
+        corrected = kb.correct("revenue:Q2", 4.1e9, reason="restated in 10-K/A")
+
+        assert kb.status(q2.ref) is Status.OUT
+        assert kb.why_out(q2.ref) == "retracted: restated in 10-K/A"
+        assert kb.status(corrected.ref) is Status.IN
+        assert kb.value("revenue:Q2") == 4.1e9
+
+    def test_the_custom_reason_also_reaches_the_change_log(self, kb: BeliefBase) -> None:
+        """why_out() reads retract_reason live, but changes()/propagate() read a reason baked in
+        by _relabel() during assert_(supersede=True) -- both must show the custom reason, not
+        assert_'s own "superseded by <ref>" text."""
+        kb.assert_("revenue:Q2", 4.3e9, source="tool:filings")
+        kb.changes()
+        kb.correct("revenue:Q2", 4.1e9, reason="restated in 10-K/A")
+
+        (out_change,) = [c for c in kb.changes() if c.key == "revenue:Q2" and c.kind.value == "OUT"]
+        assert out_change.reason == "retracted: restated in 10-K/A"
+
+    def test_source_defaults_to_the_corrected_revisions_own_source(self, kb: BeliefBase) -> None:
+        kb.assert_("revenue:Q2", 4.3e9, source="tool:filings")
+        corrected = kb.correct("revenue:Q2", 4.1e9, reason="restated")
+        assert str(corrected.source) == "tool:filings"
+
+    def test_source_can_be_overridden(self, kb: BeliefBase) -> None:
+        kb.assert_("revenue:Q2", 4.3e9, source="tool:filings")
+        corrected = kb.correct("revenue:Q2", 4.1e9, source="human:analyst", reason="restated")
+        assert str(corrected.source) == "human:analyst"
+
+    def test_fault_source_records_a_wrong_outcome_in_the_ledger(self, kb: BeliefBase) -> None:
+        kb.assert_("x", 1, source="tool:a")
+        before = kb.reliability("tool:a")
+        kb.correct("x", 2, source="tool:a", fault="source", reason="was wrong")
+        assert kb.reliability("tool:a") < before
+
+    def test_fault_none_does_not_touch_the_ledger(self, kb: BeliefBase) -> None:
+        kb.assert_("x", 1, source="tool:a")
+        before = kb.reliability("tool:a")
+        kb.correct("x", 2, source="tool:a", reason="the world changed")
+        assert kb.reliability("tool:a") == before
+
+    def test_fault_source_on_a_derived_belief_is_rejected(self, kb: BeliefBase) -> None:
+        kb.assert_("a", 1, source="tool:x")
+        kb.derive("b", rule(lambda v: v * 2, name="double"), "a")
+        with pytest.raises(ValueError, match="no source is at fault"):
+            kb.correct("b", 99, source="tool:x", fault="source")
+
+    def test_invalid_fault_is_rejected(self, kb: BeliefBase) -> None:
+        kb.assert_("x", 1, source="tool:a")
+        with pytest.raises(ValueError, match="fault must be"):
+            kb.correct("x", 2, fault="everyone")
+
+    def test_correcting_an_unknown_key_raises_unknown_belief_error(self, kb: BeliefBase) -> None:
+        with pytest.raises(UnknownBeliefError):
+            kb.correct("nope", 1)
+
+    def test_a_failed_assertion_changes_nothing(self, kb: BeliefBase) -> None:
+        kb.assert_("y", 1, source="tool:a")
+        kb.changes()  # drain the initial assert's change, so only correct()'s effect is checked
+        with pytest.raises(ValueError, match="reserved"):
+            kb.correct("y", 2, source="rule:bad")
+        assert kb.value("y") == 1
+        assert kb.status("y") is Status.IN
+        assert kb.changes() == []
+
+    def test_accepts_a_belief_object(self, kb: BeliefBase) -> None:
+        b = kb.assert_("z", 1, source="tool:a")
+        corrected = kb.correct(b, 2, reason="fixed")
+        assert corrected.value == 2
+
+    def test_rejects_neither_string_nor_belief(self, kb: BeliefBase) -> None:
+        kb.assert_("x", 1, source="tool:a")
+        with pytest.raises(TypeError, match="expected a key or Belief"):
+            kb.correct(123, 2)
+
+    def test_forwards_extra_assert_kwargs(self, kb: BeliefBase) -> None:
+        kb.assert_("x", 1, source="tool:a")
+        corrected = kb.correct("x", 2, source="tool:a", claim="corrected value")
+        assert corrected.claim == "corrected value"
+
+
 def test_multiple_justifications_keep_belief_in(kb: BeliefBase) -> None:
     kb.assert_("a", 1)
     kb.assert_("b", 1)

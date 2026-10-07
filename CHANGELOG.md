@@ -24,6 +24,7 @@ All notable changes to this project are documented here. The format follows
 - `Report.__repr__`'s `error` is now truncated too (shown as `type(message)`, message truncated to ~60
   chars), so a model error with a multi-kilobyte message no longer blows the repr back up. `StepRecord`'s
   repr also shows `response_length` next to `prompt_length`.
+- Citation and provenance checks recognize Portuguese and Spanish scale words for thousands through trillions.
 
 ## [0.1.0a4] - 2026-10-03
 

@@ -34,6 +34,7 @@ kb.cite(
 2. **The value is stated in the quote** (pass `check_value=False` to skip). Strings must appear in the
    quote as a whole word or phrase. Numbers must match a number in the quote after rounding to its stated
    precision, at the scale its unit states: `4.3e9` matches "$4.3 billion", "$4.3B" and "4,300 million",
+   with Portuguese and Spanish scale words such as "milhões", "bilhões", "millones" and "billones" also recognized,
    and `0.0976` matches "9.76%" (or "9.76 percent", "9.76 percentage points", "9.76pp"), but `4.3e9` does
    not match "$4 million". A value stored in a smaller unit matches too: `4300`, in millions, matches
    "$4.3 billion". A number without a unit may be in any magnitude or a percentage, because tables often

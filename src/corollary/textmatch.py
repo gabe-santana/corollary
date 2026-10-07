@@ -14,21 +14,42 @@ _NUMBER = re.compile(r"(?<![\w.])[-+]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.
 # A unit right after a number says how the number is scaled: "4.1 billion", "$4.1B", "9.76%".
 _UNIT = re.compile(
     r"[)\]]?\s?(%|percentage(?:\s?points?)?\b|per[\s-]?cent\b|pct\b|pp\b|pts\b"
-    r"|thousand\b|k\b|million\b|mn\b|mm\b|m\b|billion\b|bn\b|b\b|trillion\b|tn\b|t\b)",
+    r"|thousand\b|mil\b|k\b|million\b|milh[aã]o\b|milh[oõ]es\b|mill[oó]n\b|millones\b"
+    r"|mn\b|mm\b|m\b|billion\b|bilh[aã]o\b|bilh[oõ]es\b|bn\b|b\b"
+    r"|trillion\b|trilh[aã]o\b|trilh[oõ]es\b|bill[oó]n\b|billones\b|tn\b|t\b)",
     re.IGNORECASE,
 )
 _PERCENT = re.compile(r"%|percent|per[\s-]?cent|pct|pp|pts", re.IGNORECASE)
 _UNIT_SCALES: dict[str, float] = {
     "thousand": 1e-3,
+    "mil": 1e-3,
     "k": 1e-3,
     "million": 1e-6,
+    "milhao": 1e-6,
+    "milhão": 1e-6,
+    "milhoes": 1e-6,
+    "milhões": 1e-6,
+    "millon": 1e-6,
+    "millón": 1e-6,
+    "millones": 1e-6,
     "mn": 1e-6,
     "mm": 1e-6,
     "m": 1e-6,
     "billion": 1e-9,
+    "bilhao": 1e-9,
+    "bilhão": 1e-9,
+    "bilhoes": 1e-9,
+    "bilhões": 1e-9,
     "bn": 1e-9,
     "b": 1e-9,
     "trillion": 1e-12,
+    "trilhao": 1e-12,
+    "trilhão": 1e-12,
+    "trilhoes": 1e-12,
+    "trilhões": 1e-12,
+    "billon": 1e-12,
+    "billón": 1e-12,
+    "billones": 1e-12,
     "tn": 1e-12,
     "t": 1e-12,
 }

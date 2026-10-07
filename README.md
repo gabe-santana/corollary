@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/gabe-santana/corollary/main/docs/assets/corollary-logo.png" alt="Corollary logo" width="140">
-
-# Corollary
+<h1><img src="https://raw.githubusercontent.com/gabe-santana/corollary/main/docs/assets/corollary-icon.png" alt="" height="48" align="center">&nbsp;Corollary</h1>
 
 **An agent runtime where the unit of state is a belief, not a message.**
 

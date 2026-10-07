@@ -44,40 +44,35 @@ model context from the belief base instead.
 
 **Memory layers and temporal knowledge graphs** for agents store facts or summaries, often with
 timestamps, and some can invalidate facts that are contradicted or outdated. Zep's Graphiti, for
-example, tracks the validity intervals of facts in a temporal knowledge graph. These systems are close to
-Corollary on *expiry* and *contradiction*. The main differences:
+example, tracks the validity intervals of facts in a temporal knowledge graph. Corollary approaches this
+from the perspective of epistemic justification: rather than just expiring facts by time or temporal updates,
+Corollary tracks justifications and dependencies so that when a premise is invalidated, all conclusions
+derived from it are automatically retracted via dependency-directed backtracking.
 
-| | Memory layers | Corollary |
-|---|---|---|
-| What is stored | Facts, entities, summaries | Beliefs **and the justifications between them** |
-| When a fact is invalidated | That fact is marked invalid | That fact and **everything derived from it** go `OUT`, then are re-derived |
-| What the model sees | Retrieved memories, plus the conversation | Only `IN` beliefs; no transcript |
-| Conflicts | Often resolved by recency | A first-class `Conflict`; resolved by policy or a person |
-| Output | An answer | An answer with a proof and a deterministic verifier |
+**Hierarchical memory (MemGPT and Letta).** MemGPT and its successor Letta borrow operating system
+virtual memory concepts to let agents manage their own context (Packer et al., 2023). They page information
+back and forth between a limited working context and unbounded archival or recall storage.
+- *How Corollary relates:* MemGPT/Letta decides *what stays in context* based on capacity and recency/relevance.
+  Corollary decides *what is still true* based on logical and evidentiary justification. A paged-out fact in
+  MemGPT is still considered valid in its storage layer; whereas in Corollary, when a premise is retracted,
+  its consequences are invalidated regardless of whether they are in active working memory or archival storage.
+  The two are orthogonal: an agent could use Letta for managing its working context window while using
+  Corollary as its underlying belief and truth maintenance store.
 
-The two are complementary. A memory layer is a good *source* of premises for a Corollary belief base.
-
-**Prompted reasoning tracking** (asking a model to cite its sources, rate its confidence, or "keep track
-of its assumptions") improves outputs, but the guarantees live in the prompt, and a model can ignore a
-prompt. Corollary's guarantees live in the runtime.
-
-**Retrieval-augmented generation with citations** grounds answers in documents and often checks that
-citations exist. Corollary's `cite` goes further on two points: the cited value must be stated in the
-quote, and a cited fact keeps its place in the dependency graph, so revising the document can revise
-the conclusions built on it.
-
-## Neuro-symbolic research
-
-There is active research on combining LLMs with symbolic reasoners, logic programming, belief revision
-and verification. Corollary is an engineering contribution rather than a research claim: a
-small, tested, model-agnostic runtime that makes these ideas usable in everyday agent code. If you know of
-closely related work that should be cited here, please open an issue or a pull request.
+**Graph orchestration frameworks (LangGraph and similar).** LangGraph and similar frameworks define an
+agent's control flow as a graph of steps with typed shared state, supporting checkpoints after every step,
+time travel, and human-in-the-loop interrupts (Chase et al., 2023).
+- *How Corollary relates:* LangGraph orchestrates *what runs when* and manages control flow graphs and state
+  snapshots. Corollary tracks *what is believed and why*. While LangGraph's checkpoints can rewind and re-run
+  an execution path, they do not record fine-grained semantic dependencies between individual derived claims;
+  thus, a downstream correction cannot be selectively propagated across arbitrary derivations without re-running
+  the graph nodes. The two are highly complementary: a Corollary belief base can serve as the structured,
+  consistent state object maintained across LangGraph nodes.
 
 ## References
 
-- Jon Doyle. *A Truth Maintenance System.* Artificial Intelligence 12(3), 1979.
-- Johan de Kleer. *An Assumption-based TMS.* Artificial Intelligence 28(2), 1986.
-- Carlos Alchourrón, Peter Gärdenfors, David Makinson. *On the Logic of Theory Change: Partial Meet
-  Contraction and Revision Functions.* Journal of Symbolic Logic 50(2), 1985.
-- Kenneth Forbus and Johan de Kleer. *Building Problem Solvers.* MIT Press, 1993.
-- Andrey Mokhov, Neil Mitchell, Simon Peyton Jones. *Build Systems à la Carte.* ICFP 2018.
+- Alchourrón, C. E., Gärdenfors, P., & Makinson, D. (1985). On the logic of theory change: Partial meet contraction functions and their associated revision functions. *Journal of Symbolic Logic*, 50(2), 510-530.
+- Chase, H., et al. (2023). LangGraph: Multi-actor applications with LLMs. LangChain. [https://github.com/langchain-ai/langgraph](https://github.com/langchain-ai/langgraph)
+- de Kleer, J. (1986). An assumption-based TMS. *Artificial Intelligence*, 28(2), 127-162.
+- Doyle, J. (1979). A truth maintenance system. *Artificial Intelligence*, 12(3), 231-272.
+- Packer, C., Fang, V., Patil, S., Lin, K., Wooders, S., & Gonzalez, J. E. (2023). MemGPT: Towards OS-inspired LLM memory management. *arXiv preprint arXiv:2310.08560*. [https://letta.com](https://letta.com)

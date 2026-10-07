@@ -78,8 +78,7 @@ print()
 print(report.verify())
 
 print("\n--- Q2 revenue is restated to $4.1B ---\n")
-agent.kb.retract("revenue:Q2", reason="restated in 10-K/A")
-agent.kb.assert_("revenue:Q2", 4.1e9, source="tool:get_revenue")
+agent.kb.correct("revenue:Q2", 4.1e9, reason="restated in 10-K/A")
 print("Answer is stale:", report.stale)
 
 # What the model would say when asked to re-derive each belief from the current inputs.

@@ -516,6 +516,58 @@ class BeliefBase:
         self._log("restore", node.ref)
         return node.belief
 
+    def correct(
+        self,
+        key_or_belief: str | Belief,
+        value: Any,
+        *,
+        source: Source | str | None = None,
+        reason: str = "",
+        fault: str = "none",
+        **assert_kwargs: Any,
+    ) -> Belief:
+        """Correct a fact in one call: retract the currently believed revision (with ``reason``
+        and ``fault``) and assert the new ``value``, instead of calling :meth:`retract` then
+        :meth:`assert_` separately.
+
+        ``source`` defaults to the source of the revision being corrected, so
+        ``kb.correct("revenue:Q2", 4.1e9, reason="restated")`` just works. Pass it explicitly when
+        the correction comes from a different source than the original value. ``reason`` and
+        ``fault`` mean the same as :meth:`retract`'s.
+
+        Built on :meth:`assert_`'s own ``supersede=True`` rollback: if the assertion fails (an
+        invalid value, source or confidence), nothing changes. Raises :class:`UnknownBeliefError`
+        if ``key_or_belief`` names a key that has never been asserted.
+        """
+        if fault not in ("none", "source"):
+            raise ValueError(f"fault must be 'none' or 'source', got {fault!r}")
+        key = key_or_belief.key if isinstance(key_or_belief, Belief) else key_or_belief
+        if not isinstance(key, str):
+            raise TypeError(f"expected a key or Belief, got {type(key_or_belief).__name__}")
+        current = self._current_node(key)
+        if source is None:
+            source = current.belief.source
+        old_nodes = self._in_nodes(key)
+        if fault == "source" and not any(self._accountable_sources(n) for n in old_nodes):
+            raise ValueError(
+                f"{key!r} is derived by a rule or a verified formula, so no source is at fault; "
+                "retract the input that was wrong instead"
+            )
+        new_belief = self.assert_(key, value, source=source, supersede=True, **assert_kwargs)
+        # assert_(supersede=True) already retracted and logged the old revision(s) with its own
+        # "superseded by <ref>" reason, and _relabel() has already baked that text into
+        # self._reasons for this change-log entry. Only the reason text is overridden here, in
+        # both places why_out() and changes()/propagate() read it from, not re-logged, so the
+        # history/transcript keeps assert_'s own account of what happened.
+        superseded = [n for n in old_nodes if n.retracted]
+        if reason:
+            for node in superseded:
+                node.retract_reason = reason
+                self._reasons[node.ref] = f"retracted: {reason}"
+        if fault == "source":
+            self._record_outcomes(superseded, correct=False, reason=reason or "retracted as wrong")
+        return new_belief
+
     def _retract_nodes(self, nodes: list[_Node], reason: str) -> list[Belief]:
         for node in nodes:
             node.retracted, node.retract_reason = True, reason

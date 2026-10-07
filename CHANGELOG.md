@@ -8,11 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
-- `retract`, `restore`, `status`, `confidence`, `valid_until`, `support`, `justifications`,
-  `dependents`, `why_out`, `explain` and `proof`, plus `derive()`'s `*inputs` and `justify()`'s
-  `antecedents=`, now accept a `Belief` directly (meaning its exact revision) wherever a key or ref
-  was accepted, so a value returned by `assert_()`, `derive()` or `justify()` can be passed straight
-  back in instead of stringified to `.ref` first. Anything else raises `TypeError`.
+- `BeliefBase.correct(key_or_belief, value, *, source=None, reason="", fault="none", **assert_kwargs)`
+  retracts the current revision and asserts the new value in one call, instead of two.  `source`
+  defaults to the corrected revision's own source. Built on `assert_(supersede=True)`'s own
+  rollback: if the assertion fails, nothing changes.
 
 ### Changed
 

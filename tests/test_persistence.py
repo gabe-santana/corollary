@@ -71,6 +71,36 @@ def test_rejects_foreign_or_future_snapshots() -> None:
         BeliefBase.from_dict(data)
 
 
+@pytest.mark.parametrize("bad_version", [True, "2", 1.5])
+def test_rejects_non_integer_version_fields(bad_version: object) -> None:
+    """bool is a subclass of int in Python, so True must be rejected explicitly."""
+    data = build().to_dict()
+    data["version"] = bad_version
+    with pytest.raises(ValueError, match="must be an integer"):
+        BeliefBase.from_dict(data)
+
+
+def test_rejects_negative_version() -> None:
+    data = build().to_dict()
+    data["version"] = -1
+    with pytest.raises(ValueError, match="invalid"):
+        BeliefBase.from_dict(data)
+
+
+def test_missing_version_still_loads_as_the_oldest_format() -> None:
+    """Unchanged behavior: a snapshot with no version field at all predates versioning."""
+    data = build().to_dict()
+    del data["version"]
+    BeliefBase.from_dict(data, rules=[growth])  # must not raise
+
+
+@pytest.mark.parametrize("version", [0, 1, 2])
+def test_every_real_version_still_loads(version: int) -> None:
+    data = build().to_dict()
+    data["version"] = version
+    BeliefBase.from_dict(data, rules=[growth])  # must not raise
+
+
 def test_snapshot_is_plain_json() -> None:
     text = json.dumps(build().to_dict())
     assert '"format": "corollary.beliefbase"' in text

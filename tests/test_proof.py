@@ -118,6 +118,22 @@ def test_from_dict_rejects_other_formats(revenue_kb: BeliefBase) -> None:
         Proof.from_dict({**data, "version": 99})
 
 
+@pytest.mark.parametrize("bad_version", [True, "2", 1.5, -1, 0, 2])
+def test_from_dict_rejects_malformed_version_fields(revenue_kb: BeliefBase, bad_version: object) -> None:
+    """bool is a subclass of int in Python, so True must be rejected explicitly, not just any
+    non-int. A string, a float, a negative number, and any int other than 1 are all invalid too --
+    there has only ever been one proof format version."""
+    data = revenue_kb.proof("trend:Q3").to_dict()
+    with pytest.raises(ValueError, match="unsupported proof version"):
+        Proof.from_dict({**data, "version": bad_version})
+
+
+def test_from_dict_still_accepts_the_real_version(revenue_kb: BeliefBase) -> None:
+    data = revenue_kb.proof("trend:Q3").to_dict()
+    assert data["version"] == 1
+    Proof.from_dict(data)  # must not raise
+
+
 def test_to_json_refuses_values_json_cannot_represent(kb: BeliefBase) -> None:
     from decimal import Decimal
 

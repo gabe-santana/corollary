@@ -306,8 +306,9 @@ class Proof:
     def from_dict(cls, data: Mapping[str, Any]) -> Proof:
         if data.get("format") != "corollary.proof":
             raise ValueError(f"not a Corollary proof (format {data.get('format')!r})")
-        if not isinstance(data.get("version"), int) or data["version"] > 1:
-            raise ValueError(f"unsupported proof version {data.get('version')!r}; upgrade corollary to read it")
+        version = data.get("version")
+        if isinstance(version, bool) or not isinstance(version, int) or version != 1:
+            raise ValueError(f"unsupported proof version {version!r}; upgrade corollary to read it")
         return cls(
             roots=tuple(data["roots"]),
             steps=tuple(ProofStep.from_dict(s) for s in data["steps"]),

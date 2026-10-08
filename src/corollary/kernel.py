@@ -370,7 +370,7 @@ class BeliefBase:
         self,
         key: str,
         rule: Rule | Callable[..., Any] | str,
-        *inputs: str,
+        *inputs: str | Belief,
         unless: Iterable[str] = (),
         claim: str = "",
         metadata: Mapping[str, Any] | None = None,
@@ -408,7 +408,7 @@ class BeliefBase:
         key: str,
         value: Any,
         *,
-        antecedents: Iterable[str],
+        antecedents: Iterable[str | Belief],
         source: Source | str,
         claim: str = "",
         formula: str | None = None,
@@ -430,7 +430,7 @@ class BeliefBase:
         """
         src = Source.parse(source)
         self.refresh()  # never conclude from evidence that has expired since the last check
-        nodes = [self._resolve_antecedent(item) for item in _keys(antecedents)]
+        nodes = [self._resolve_antecedent(item) for item in _as_list(antecedents)]
         if formula is not None:
             values = {n.belief.key: n.belief.value for n in nodes}
             missing = [k for k in formula_keys(formula) if k not in values]
@@ -462,7 +462,7 @@ class BeliefBase:
     # Retraction
     # ======================================================================================
 
-    def retract(self, key_or_ref: str, *, reason: str = "", fault: str = "none") -> list[Belief]:
+    def retract(self, key_or_ref: str | Belief, *, reason: str = "", fault: str = "none") -> list[Belief]:
         """Withdraw a belief. Everything that depended on it goes ``OUT`` immediately.
 
         A key retracts every ``IN`` revision of that key; a ref (``key@2``) retracts exactly that
@@ -478,6 +478,7 @@ class BeliefBase:
         """
         if fault not in ("none", "source"):
             raise ValueError(f"fault must be 'none' or 'source', got {fault!r}")
+        key_or_ref = _as_key_or_ref(key_or_ref)
         key, revision = parse_ref(key_or_ref)
         if revision is not None:
             node = self._node(key_or_ref)
@@ -498,8 +499,9 @@ class BeliefBase:
             self._record_outcomes(nodes, correct=False, reason=reason or "retracted as wrong")
         return self._retract_nodes(nodes, reason)
 
-    def restore(self, key_or_ref: str) -> Belief:
+    def restore(self, key_or_ref: str | Belief) -> Belief:
         """Undo a retraction (the latest retracted revision when given a key)."""
+        key_or_ref = _as_key_or_ref(key_or_ref)
         key, revision = parse_ref(key_or_ref)
         if revision is not None:
             node = self._node(key_or_ref)
@@ -982,8 +984,9 @@ class BeliefBase:
     # Queries
     # ======================================================================================
 
-    def status(self, key_or_ref: str) -> Status:
+    def status(self, key_or_ref: str | Belief) -> Status:
         """``IN`` if the ref is believed, or if any revision of the key is believed."""
+        key_or_ref = _as_key_or_ref(key_or_ref)
         key, revision = parse_ref(key_or_ref)
         if revision is not None:
             return self._node(key_or_ref).status
@@ -1045,7 +1048,7 @@ class BeliefBase:
     def __len__(self) -> int:
         return sum(1 for n in self._nodes.values() if n.status is Status.IN)
 
-    def confidence(self, key_or_ref: str) -> float:
+    def confidence(self, key_or_ref: str | Belief) -> float:
         """Effective confidence of a belief, between 0 (``OUT``) and 1.
 
         * A premise counts ``reliability(source) * freshness``: the source's reliability is learned
@@ -1101,7 +1104,7 @@ class BeliefBase:
                 result.append(node.belief)
         return result
 
-    def valid_until(self, key_or_ref: str) -> datetime | None:
+    def valid_until(self, key_or_ref: str | Belief) -> datetime | None:
         """Earliest expiry along the current support chain, or ``None`` if nothing expires."""
         node = self._resolve(key_or_ref)
         earliest: datetime | None = None
@@ -1116,14 +1119,14 @@ class BeliefBase:
             stack.extend(self._nodes[a] for a in n.support.antecedents)
         return earliest
 
-    def support(self, key_or_ref: str) -> Justification | None:
+    def support(self, key_or_ref: str | Belief) -> Justification | None:
         """The justification currently making the belief ``IN`` (``None`` when ``OUT``)."""
         return self._resolve(key_or_ref).support
 
-    def justifications(self, key_or_ref: str) -> list[Justification]:
+    def justifications(self, key_or_ref: str | Belief) -> list[Justification]:
         return list(self._resolve(key_or_ref).justifications)
 
-    def dependents(self, key_or_ref: str, *, transitive: bool = True) -> list[Belief]:
+    def dependents(self, key_or_ref: str | Belief, *, transitive: bool = True) -> list[Belief]:
         """Beliefs whose justifications use this one (directly, or anywhere downstream)."""
         start = self._resolve(key_or_ref)
         seen: dict[str, None] = {}
@@ -1137,14 +1140,14 @@ class BeliefBase:
                         frontier.append(nxt)
         return [self._nodes[r].belief for r in seen]
 
-    def why_out(self, key_or_ref: str) -> str | None:
+    def why_out(self, key_or_ref: str | Belief) -> str | None:
         """Why a belief is ``OUT`` (``None`` if it is ``IN``)."""
         node = self._resolve(key_or_ref)
         if node.status is Status.IN:
             return None
         return self._out_reason(node, node.justifications[-1] if node.justifications else None)
 
-    def explain(self, key_or_ref: str) -> str:
+    def explain(self, key_or_ref: str | Belief) -> str:
         """A readable account of a belief: value, status, sources, support and dependents."""
         node = self._resolve(key_or_ref)
         b = node.belief
@@ -1172,7 +1175,7 @@ class BeliefBase:
             lines.append(f"  used by:    {', '.join(used_by)}")
         return "\n".join(lines)
 
-    def proof(self, *keys_or_refs: str) -> Proof:
+    def proof(self, *keys_or_refs: str | Belief) -> Proof:
         """Snapshot the support graph behind one or more beliefs."""
         if not keys_or_refs:
             raise ValueError("proof() needs at least one key or ref")
@@ -1547,8 +1550,9 @@ class BeliefBase:
             )
         return nodes[-1]
 
-    def _resolve(self, key_or_ref: str) -> _Node:
+    def _resolve(self, key_or_ref: str | Belief) -> _Node:
         """Ref -> that revision; key -> the believed revision, else the latest one."""
+        key_or_ref = _as_key_or_ref(key_or_ref)
         key, revision = parse_ref(key_or_ref)
         if revision is not None:
             return self._node(key_or_ref)
@@ -1556,7 +1560,8 @@ class BeliefBase:
         nodes = self._in_nodes(key)
         return nodes[-1] if nodes else self._nodes[refs[-1]]
 
-    def _resolve_antecedent(self, key_or_ref: str) -> _Node:
+    def _resolve_antecedent(self, key_or_ref: str | Belief) -> _Node:
+        key_or_ref = _as_key_or_ref(key_or_ref)
         key, revision = parse_ref(key_or_ref)
         if revision is None:
             return self._current_node(key)
@@ -1565,7 +1570,7 @@ class BeliefBase:
             raise NotBelievedError(f"{key_or_ref!r} is OUT and cannot support a conclusion")
         return node
 
-    def _resolve_for_proof(self, key_or_ref: str) -> str:
+    def _resolve_for_proof(self, key_or_ref: str | Belief) -> str:
         return self._resolve(key_or_ref).ref
 
     def _proof_justification(self, ref: str) -> Justification | None:
@@ -1909,3 +1914,12 @@ def _as_ref(kb: BeliefBase, item: str | Belief) -> str:
     if isinstance(item, Belief):
         return item.ref
     return kb._resolve(item).ref
+
+
+def _as_key_or_ref(item: str | Belief) -> str:
+    """A ``Belief`` means its exact revision; a string key or ref passes through unchanged."""
+    if isinstance(item, Belief):
+        return item.ref
+    if isinstance(item, str):
+        return item
+    raise TypeError(f"expected a key, ref, or Belief, got {type(item).__name__}")
